@@ -2,6 +2,7 @@
 import RoleSwitcher from "@/components/RoleSwitcher";
 import LiveRibbon from "@/components/LiveRibbon";
 import ChatInterface from "@/components/ChatInterface";
+import TransportPanel from "@/components/TransportPanel";
 import { getLiveState } from "@/lib/mockData";
 
 export default function FanPage() {
@@ -20,6 +21,8 @@ export default function FanPage() {
             to head home to avoid the crowd.
           </p>
         </div>
+
+        <TransportPanel state={state} />
 
         <ChatInterface
           role="fan"

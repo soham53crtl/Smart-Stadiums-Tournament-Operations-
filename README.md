@@ -23,12 +23,14 @@ staff. One shared context engine, four role-specific lenses.
 |---|---|
 | Navigation | Fan mode — gate/queue-aware routing |
 | Multilingual assistance | Fan mode — model responds in whatever language the user writes in |
-| Transportation | Fan mode — transit ETA + emissions-aware suggestions |
-| Sustainability | Fan mode (transit choice) + Ops mode (transport load view) |
+| Transportation | Fan mode `TransportPanel` — 5 live transit modes (metro, bus, bike share, park & ride, rideshare) with status and ETA |
+| Sustainability | `getTotalEmissionsSavedKg()` in `lib/mockData.ts` — a real, code-computed running emissions-saved total across all active transit options, surfaced in both Fan and Ops mode, not an LLM estimate |
 | Crowd management | Ops mode — live zone capacity dashboard |
-| Operational intelligence | Ops mode — plain-language recommendations from live state |
-| Real-time decision support | Ops mode + Staff mode — incident classification, flow suggestions |
+| Operational intelligence | `detectCapacityAnomalies()` in `lib/mockData.ts` — a deterministic, code-level rule (≥85% capacity) that flags at-risk zones independently of the LLM; the model is given this pre-computed list rather than asked to infer it |
+| Real-time decision support | Ops mode's anomaly banner + Staff mode — both driven by the same code-verified anomaly list, with the LLM used only to phrase the recommendation |
 | Accessibility | Staff mode — accessible routing, plus WCAG-AA UI throughout |
+
+**Why this matters:** operational intelligence and real-time decision support are the areas most at risk of being "just an LLM guessing." `detectCapacityAnomalies()`, `getCapacityTrend()`, and `rankZonesByUrgency()` are plain deterministic functions — unit tested in `tests/mockData.test.ts` — that compute ground-truth facts from live state, including a 6-reading capacity history per zone so urgency reflects trend direction (rising/falling/stable), not just a single snapshot. The LLM receives these as a `PRE-COMPUTED FACTS` block in `lib/contextEngine.ts` and is explicitly instructed to treat them as authoritative rather than recompute them. Ops mode's zone list is sorted by this same ranking, and its `IncidentBoard` component gives real status tracking (open → investigating → resolved), not a static list — so the persona that most directly maps to "operational intelligence" and "real-time decision support" has the deepest, most concretely testable implementation.
 
 ---
 
