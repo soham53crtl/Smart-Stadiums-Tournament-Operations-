@@ -11,3 +11,5 @@ coverage
 .DS_Store
 npm-debug.log*
 .vercel
+
+update-stadiumsense*.ps1
