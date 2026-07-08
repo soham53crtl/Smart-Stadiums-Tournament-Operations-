@@ -1,0 +1,71 @@
+@import "tailwindcss";
+
+:root {
+  /* Ink: warm charcoal-teal, not pure black -- the "control room at night" base */
+  --color-ink: #0e1620;
+  --color-panel: #16212c;
+  --color-panel-raised: #1c2b38;
+  --color-chalk: #eaf0f2;
+  --color-chalk-muted: #9fb0ba;
+  --color-slate: #2a3a46;
+
+  /* Signal: hi-vis floodlight orange -- alerts, CTAs, urgency */
+  --color-signal: #ff6b35;
+  --color-signal-dim: #7a3a20;
+
+  /* Pitch: football-field green -- calm data, live status, success */
+  --color-pitch: #2bb673;
+  --color-pitch-dim: #163d2b;
+}
+
+@theme inline {
+  --color-ink: var(--color-ink);
+  --color-panel: var(--color-panel);
+  --color-panel-raised: var(--color-panel-raised);
+  --color-chalk: var(--color-chalk);
+  --color-chalk-muted: var(--color-chalk-muted);
+  --color-slate: var(--color-slate);
+  --color-signal: var(--color-signal);
+  --color-signal-dim: var(--color-signal-dim);
+  --color-pitch: var(--color-pitch);
+  --color-pitch-dim: var(--color-pitch-dim);
+  --font-display: "Space Grotesk", "Segoe UI", sans-serif;
+  --font-body: "Inter", "Segoe UI", sans-serif;
+  --font-data: "JetBrains Mono", "Courier New", monospace;
+}
+
+body {
+  background: var(--color-ink);
+  color: var(--color-chalk);
+  font-family: var(--font-body), system-ui, sans-serif;
+}
+
+/* Respect reduced-motion preference for the ribbon ticker and any transitions */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@keyframes ticker-scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-ticker {
+  animation: ticker-scroll 30s linear infinite;
+}
+
+/* Visible keyboard focus ring everywhere -- accessibility floor */
+:focus-visible {
+  outline: 2px solid var(--color-signal);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
