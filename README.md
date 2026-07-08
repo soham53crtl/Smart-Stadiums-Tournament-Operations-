@@ -3,7 +3,7 @@
 A GenAI-powered assistant for **Smart Stadiums & Tournament Operations** —
 built for FIFA World Cup 2026.
 
-**Live demo:** _add your Vercel URL here after deploying_
+**Live demo:** https://stadiumsense-worldcup.vercel.app
 **Repo:** https://github.com/soham53crtl/Smart-Stadiums-Tournament-Operations
 
 ---
