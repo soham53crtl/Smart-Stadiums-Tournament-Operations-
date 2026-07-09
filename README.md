@@ -3,8 +3,8 @@
 A GenAI-powered assistant for **Smart Stadiums & Tournament Operations** —
 built for FIFA World Cup 2026.
 
-**Live demo:** _add your Vercel URL here after deploying_
-**Repo:** https://github.com/soham53crtl/Smart-Stadiums-Tournament-Operations
+**Live demo:** https://stadiumsense-worldcup.vercel.app
+**Repo:** https://github.com/soham53crtl/Smart-Stadiums-Tournament-Operations-
 
 ---
 
@@ -113,7 +113,16 @@ Get a free key at aistudio.google.com → "Get API key."
 npm run test            # unit + integration + accessibility tests
 npm run test:coverage   # coverage report
 npm run lint            # must show zero warnings
+npm run format:check    # must show no style issues
 ```
+
+68 tests across 11 suites, ~96% statement coverage. Every component
+(including the shared `RoleShell`, `PageHeader`, `ZoneStatusGrid`,
+`TaskQueue`) has its own render test, the `useChatSubmit` hook is tested
+directly with `renderHook` (debounce timing, immediate submit, error
+paths) independent of any component, and `ChatInterface`/`IncidentBoard`
+have interaction tests (`fireEvent`) covering clicks and form submission,
+not just static rendering.
 
 ---
 

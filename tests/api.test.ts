@@ -28,6 +28,16 @@ describe("POST /api/chat", () => {
     (getAssistantResponse as jest.Mock).mockReset();
   });
 
+  it("returns 400 for a malformed JSON body", async () => {
+    const req = new NextRequest("http://localhost/api/chat", {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-forwarded-for": "10.0.0.9" },
+      body: "{not valid json",
+    });
+    const res = await POST(req);
+    expect(res.status).toBe(400);
+  });
+
   it("returns 400 for an invalid role", async () => {
     const res = await POST(makeRequest({ role: "villain", query: "hi" }, "10.0.0.1"));
     expect(res.status).toBe(400);
