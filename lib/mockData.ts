@@ -56,18 +56,78 @@ const zoneIndex = new Map<string, ZoneStatus>();
 const baseState: LiveState = {
   updatedAt: new Date().toISOString(),
   zones: [
-    { zoneId: "gate-3", name: "Gate 3 (North)", capacityPercent: 92, queueWaitMinutes: 18, capacityHistory: [58, 67, 74, 81, 88, 92] },
-    { zoneId: "gate-5", name: "Gate 5 (East)", capacityPercent: 41, queueWaitMinutes: 3, capacityHistory: [30, 35, 38, 40, 39, 41] },
-    { zoneId: "gate-7", name: "Gate 7 (South)", capacityPercent: 67, queueWaitMinutes: 9, capacityHistory: [70, 69, 68, 66, 67, 67] },
-    { zoneId: "concourse-a", name: "Concourse A", capacityPercent: 78, queueWaitMinutes: 6, capacityHistory: [50, 58, 64, 70, 75, 78] },
-    { zoneId: "concourse-b", name: "Concourse B", capacityPercent: 35, queueWaitMinutes: 2, capacityHistory: [20, 24, 28, 30, 33, 35] },
+    {
+      zoneId: "gate-3",
+      name: "Gate 3 (North)",
+      capacityPercent: 92,
+      queueWaitMinutes: 18,
+      capacityHistory: [58, 67, 74, 81, 88, 92],
+    },
+    {
+      zoneId: "gate-5",
+      name: "Gate 5 (East)",
+      capacityPercent: 41,
+      queueWaitMinutes: 3,
+      capacityHistory: [30, 35, 38, 40, 39, 41],
+    },
+    {
+      zoneId: "gate-7",
+      name: "Gate 7 (South)",
+      capacityPercent: 67,
+      queueWaitMinutes: 9,
+      capacityHistory: [70, 69, 68, 66, 67, 67],
+    },
+    {
+      zoneId: "concourse-a",
+      name: "Concourse A",
+      capacityPercent: 78,
+      queueWaitMinutes: 6,
+      capacityHistory: [50, 58, 64, 70, 75, 78],
+    },
+    {
+      zoneId: "concourse-b",
+      name: "Concourse B",
+      capacityPercent: 35,
+      queueWaitMinutes: 2,
+      capacityHistory: [20, 24, 28, 30, 33, 35],
+    },
   ],
   transport: [
-    { line: "Metro Blue Line", mode: "metro", status: "on_time", nextDepartureMinutes: 6, estimatedEmissionsSavedKg: 2.1 },
-    { line: "Shuttle Bus 12", mode: "bus", status: "delayed", nextDepartureMinutes: 14, estimatedEmissionsSavedKg: 1.4 },
-    { line: "Stadium Bike Share", mode: "bike_share", status: "on_time", nextDepartureMinutes: 1, estimatedEmissionsSavedKg: 2.8 },
-    { line: "Park & Ride Lot C Express", mode: "park_and_ride", status: "on_time", nextDepartureMinutes: 9, estimatedEmissionsSavedKg: 1.1 },
-    { line: "Rideshare Pickup Zone B", mode: "rideshare_zone", status: "disrupted", nextDepartureMinutes: 22, estimatedEmissionsSavedKg: 0.3 },
+    {
+      line: "Metro Blue Line",
+      mode: "metro",
+      status: "on_time",
+      nextDepartureMinutes: 6,
+      estimatedEmissionsSavedKg: 2.1,
+    },
+    {
+      line: "Shuttle Bus 12",
+      mode: "bus",
+      status: "delayed",
+      nextDepartureMinutes: 14,
+      estimatedEmissionsSavedKg: 1.4,
+    },
+    {
+      line: "Stadium Bike Share",
+      mode: "bike_share",
+      status: "on_time",
+      nextDepartureMinutes: 1,
+      estimatedEmissionsSavedKg: 2.8,
+    },
+    {
+      line: "Park & Ride Lot C Express",
+      mode: "park_and_ride",
+      status: "on_time",
+      nextDepartureMinutes: 9,
+      estimatedEmissionsSavedKg: 1.1,
+    },
+    {
+      line: "Rideshare Pickup Zone B",
+      mode: "rideshare_zone",
+      status: "disrupted",
+      nextDepartureMinutes: 22,
+      estimatedEmissionsSavedKg: 0.3,
+    },
   ],
   weather: { condition: "Clear", tempCelsius: 27 },
   incidents: [
@@ -89,9 +149,27 @@ const baseState: LiveState = {
     },
   ],
   volunteerTasks: [
-    { id: "task-001", title: "Assist wayfinding at Gate 3", zoneId: "gate-3", urgency: "high", skillTag: "navigation" },
-    { id: "task-002", title: "Restock hydration station", zoneId: "concourse-a", urgency: "medium", skillTag: "logistics" },
-    { id: "task-003", title: "Escort accessibility request", zoneId: "concourse-b", urgency: "high", skillTag: "accessibility" },
+    {
+      id: "task-001",
+      title: "Assist wayfinding at Gate 3",
+      zoneId: "gate-3",
+      urgency: "high",
+      skillTag: "navigation",
+    },
+    {
+      id: "task-002",
+      title: "Restock hydration station",
+      zoneId: "concourse-a",
+      urgency: "medium",
+      skillTag: "logistics",
+    },
+    {
+      id: "task-003",
+      title: "Escort accessibility request",
+      zoneId: "concourse-b",
+      urgency: "high",
+      skillTag: "accessibility",
+    },
   ],
 };
 
@@ -181,4 +259,14 @@ export function rankZonesByUrgency(state: LiveState): ZoneStatus[] {
     return s;
   };
   return [...state.zones].sort((a, b) => score(b) - score(a));
+}
+
+/**
+ * Sorts volunteer tasks by urgency (high first). Lives here rather than in
+ * the Volunteer page component so it's unit-testable independent of any
+ * rendering concerns, consistent with how zone ranking is handled.
+ */
+export function sortTasksByUrgency(tasks: VolunteerTask[]): VolunteerTask[] {
+  const order: Record<VolunteerTask["urgency"], number> = { high: 0, medium: 1, low: 2 };
+  return [...tasks].sort((a, b) => order[a.urgency] - order[b.urgency]);
 }

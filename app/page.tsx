@@ -43,17 +43,18 @@ export default function Home() {
   return (
     <main className="mx-auto flex max-w-5xl flex-col gap-16 px-4 py-16 sm:px-6">
       <section className="flex flex-col gap-4">
-        <p className="font-data text-xs tracking-widest text-pitch">FIFA WORLD CUP 2026 · SMART STADIUMS</p>
+        <p className="font-data text-xs tracking-widest text-pitch">
+          FIFA WORLD CUP 2026 · SMART STADIUMS
+        </p>
         <h1 className="font-display text-4xl font-medium leading-tight text-chalk sm:text-5xl">
           One live stadium state.
           <br />
           Four ways to act on it.
         </h1>
         <p className="max-w-xl font-body text-base text-chalk-muted">
-          StadiumSense is a GenAI context engine that reads the same live venue
-          data — crowd density, gate waits, transport, incidents — and reasons
-          differently depending on who&apos;s asking: a fan, an operations lead,
-          a volunteer, or venue staff.
+          StadiumSense is a GenAI context engine that reads the same live venue data — crowd
+          density, gate waits, transport, incidents — and reasons differently depending on
+          who&apos;s asking: a fan, an operations lead, a volunteer, or venue staff.
         </p>
       </section>
 

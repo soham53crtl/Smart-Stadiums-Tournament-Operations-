@@ -3,7 +3,7 @@
 A GenAI-powered assistant for **Smart Stadiums & Tournament Operations** —
 built for FIFA World Cup 2026.
 
-**Live demo:** https://stadiumsense-worldcup.vercel.app
+**Live demo:** _add your Vercel URL here after deploying_
 **Repo:** https://github.com/soham53crtl/Smart-Stadiums-Tournament-Operations
 
 ---
@@ -13,22 +13,22 @@ built for FIFA World Cup 2026.
 **Challenge 4 — Smart Stadiums & Tournament Operations.**
 
 Rather than building one tool for one type of user, StadiumSense answers the
-question: *what does the same live stadium data mean to four different
-people at the same moment?* A 92%-full gate is a "go somewhere else" signal
+question: _what does the same live stadium data mean to four different
+people at the same moment?_ A 92%-full gate is a "go somewhere else" signal
 to a fan, a "redirect flow now" signal to an operations lead, a "go help
 here" signal to a volunteer, and a "check for an incident" signal to venue
 staff. One shared context engine, four role-specific lenses.
 
-| PS improvement area | Where it's handled |
-|---|---|
-| Navigation | Fan mode — gate/queue-aware routing |
-| Multilingual assistance | Fan mode — model responds in whatever language the user writes in |
-| Transportation | Fan mode `TransportPanel` — 5 live transit modes (metro, bus, bike share, park & ride, rideshare) with status and ETA |
-| Sustainability | `getTotalEmissionsSavedKg()` in `lib/mockData.ts` — a real, code-computed running emissions-saved total across all active transit options, surfaced in both Fan and Ops mode, not an LLM estimate |
-| Crowd management | Ops mode — live zone capacity dashboard |
-| Operational intelligence | `detectCapacityAnomalies()` in `lib/mockData.ts` — a deterministic, code-level rule (≥85% capacity) that flags at-risk zones independently of the LLM; the model is given this pre-computed list rather than asked to infer it |
-| Real-time decision support | Ops mode's anomaly banner + Staff mode — both driven by the same code-verified anomaly list, with the LLM used only to phrase the recommendation |
-| Accessibility | Staff mode — accessible routing, plus WCAG-AA UI throughout |
+| PS improvement area        | Where it's handled                                                                                                                                                                                                             |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Navigation                 | Fan mode — gate/queue-aware routing                                                                                                                                                                                            |
+| Multilingual assistance    | Fan mode — model responds in whatever language the user writes in                                                                                                                                                              |
+| Transportation             | Fan mode `TransportPanel` — 5 live transit modes (metro, bus, bike share, park & ride, rideshare) with status and ETA                                                                                                          |
+| Sustainability             | `getTotalEmissionsSavedKg()` in `lib/mockData.ts` — a real, code-computed running emissions-saved total across all active transit options, surfaced in both Fan and Ops mode, not an LLM estimate                              |
+| Crowd management           | Ops mode — live zone capacity dashboard                                                                                                                                                                                        |
+| Operational intelligence   | `detectCapacityAnomalies()` in `lib/mockData.ts` — a deterministic, code-level rule (≥85% capacity) that flags at-risk zones independently of the LLM; the model is given this pre-computed list rather than asked to infer it |
+| Real-time decision support | Ops mode's anomaly banner + Staff mode — both driven by the same code-verified anomaly list, with the LLM used only to phrase the recommendation                                                                               |
+| Accessibility              | Staff mode — accessible routing, plus WCAG-AA UI throughout                                                                                                                                                                    |
 
 **Why this matters:** operational intelligence and real-time decision support are the areas most at risk of being "just an LLM guessing." `detectCapacityAnomalies()`, `getCapacityTrend()`, and `rankZonesByUrgency()` are plain deterministic functions — unit tested in `tests/mockData.test.ts` — that compute ground-truth facts from live state, including a 6-reading capacity history per zone so urgency reflects trend direction (rising/falling/stable), not just a single snapshot. The LLM receives these as a `PRE-COMPUTED FACTS` block in `lib/contextEngine.ts` and is explicitly instructed to treat them as authoritative rather than recompute them. Ops mode's zone list is sorted by this same ranking, and its `IncidentBoard` component gives real status tracking (open → investigating → resolved), not a static list — so the persona that most directly maps to "operational intelligence" and "real-time decision support" has the deepest, most concretely testable implementation.
 
@@ -44,6 +44,7 @@ behind a typed `LiveState` interface. Swapping mock data for a real feed
 means implementing `getLiveState()` differently; nothing else changes.
 
 `lib/contextEngine.ts` is the actual "brain." It:
+
 - Builds a role-specific system prompt (fan / ops / volunteer / staff)
 - Injects the current `LiveState` as JSON context
 - Sanitizes user input against basic prompt-injection patterns before it
@@ -58,6 +59,21 @@ means implementing `getLiveState()` differently; nothing else changes.
 server-only Next.js route; the key never reaches the browser. It also
 enforces a simple per-IP rate limit (10 requests/minute) with a periodic
 sweep so the tracking map doesn't grow unbounded.
+
+**Shared structure across the four role pages.** Each of
+`app/{fan,ops,volunteer,staff}/page.tsx` composes the same two shared
+components — `RoleShell` (nav + live ribbon + layout wrapper) and
+`PageHeader` (mode label + title) — rather than duplicating that markup
+four times. Page-specific sections (`ZoneStatusGrid`, `TaskQueue`,
+`IncidentBoard`, `TransportPanel`) are their own components so each page
+file is a short composition of sections, not a wall of markup.
+`ChatInterface.tsx` itself only renders; the request lifecycle
+(debouncing, in-flight guarding, the actual fetch) lives in
+`hooks/useChatSubmit.ts`, so the two concerns can be read and changed
+independently. Business logic that isn't presentation — zone urgency
+ranking, task sorting, anomaly detection — lives in `lib/mockData.ts`,
+where it's unit tested directly rather than only reachable through
+rendering a component.
 
 **Why Gemini instead of Claude/OpenAI:** this is a student hackathon build
 with no API budget. Google AI Studio's free tier requires no card and no
@@ -88,6 +104,7 @@ npm install
 cp .env.example .env   # then paste your Gemini key into .env
 npm run dev
 ```
+
 Get a free key at aistudio.google.com → "Get API key."
 
 ### Testing

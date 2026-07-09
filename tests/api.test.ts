@@ -39,7 +39,10 @@ describe("POST /api/chat", () => {
   });
 
   it("returns 200 with an answer for a valid request", async () => {
-    (getAssistantResponse as jest.Mock).mockResolvedValue({ answer: "Go to Gate 5", cached: false });
+    (getAssistantResponse as jest.Mock).mockResolvedValue({
+      answer: "Go to Gate 5",
+      cached: false,
+    });
     const res = await POST(makeRequest({ role: "fan", query: "Which gate?" }, "10.0.0.3"));
     const data = await res.json();
     expect(res.status).toBe(200);

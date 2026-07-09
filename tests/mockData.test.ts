@@ -5,8 +5,10 @@ import {
   getTotalEmissionsSavedKg,
   getZoneById,
   rankZonesByUrgency,
+  sortTasksByUrgency,
   CAPACITY_ANOMALY_THRESHOLD,
   type LiveState,
+  type VolunteerTask,
   type ZoneStatus,
 } from "@/lib/mockData";
 
@@ -29,8 +31,20 @@ const buildState = (overrides: Partial<LiveState> = {}): LiveState => ({
     },
   ],
   transport: [
-    { line: "A", mode: "metro", status: "on_time", nextDepartureMinutes: 5, estimatedEmissionsSavedKg: 2 },
-    { line: "B", mode: "bus", status: "disrupted", nextDepartureMinutes: 30, estimatedEmissionsSavedKg: 3 },
+    {
+      line: "A",
+      mode: "metro",
+      status: "on_time",
+      nextDepartureMinutes: 5,
+      estimatedEmissionsSavedKg: 2,
+    },
+    {
+      line: "B",
+      mode: "bus",
+      status: "disrupted",
+      nextDepartureMinutes: 30,
+      estimatedEmissionsSavedKg: 3,
+    },
   ],
   weather: { condition: "Clear", tempCelsius: 20 },
   incidents: [],
@@ -48,7 +62,13 @@ describe("detectCapacityAnomalies", () => {
   it("returns an empty array when no zone meets the threshold", () => {
     const state = buildState({
       zones: [
-        { zoneId: "z1", name: "Zone One", capacityPercent: 40, queueWaitMinutes: 1, capacityHistory: [40] },
+        {
+          zoneId: "z1",
+          name: "Zone One",
+          capacityPercent: 40,
+          queueWaitMinutes: 1,
+          capacityHistory: [40],
+        },
       ],
     });
     expect(detectCapacityAnomalies(state)).toHaveLength(0);
@@ -79,7 +99,13 @@ describe("getTotalEmissionsSavedKg", () => {
   it("returns 0 when all transport is disrupted", () => {
     const state = buildState({
       transport: [
-        { line: "A", mode: "metro", status: "disrupted", nextDepartureMinutes: 30, estimatedEmissionsSavedKg: 2 },
+        {
+          line: "A",
+          mode: "metro",
+          status: "disrupted",
+          nextDepartureMinutes: 30,
+          estimatedEmissionsSavedKg: 2,
+        },
       ],
     });
     expect(getTotalEmissionsSavedKg(state)).toBe(0);
@@ -135,5 +161,32 @@ describe("rankZonesByUrgency", () => {
     const originalOrder = state.zones.map((z) => z.zoneId);
     rankZonesByUrgency(state);
     expect(state.zones.map((z) => z.zoneId)).toEqual(originalOrder);
+  });
+});
+
+describe("sortTasksByUrgency", () => {
+  const buildTask = (id: string, urgency: VolunteerTask["urgency"]): VolunteerTask => ({
+    id,
+    title: `Task ${id}`,
+    zoneId: "z1",
+    urgency,
+    skillTag: "general",
+  });
+
+  it("sorts high urgency tasks before medium and low", () => {
+    const tasks = [buildTask("a", "low"), buildTask("b", "high"), buildTask("c", "medium")];
+    const sorted = sortTasksByUrgency(tasks);
+    expect(sorted.map((t) => t.id)).toEqual(["b", "c", "a"]);
+  });
+
+  it("does not mutate the original array", () => {
+    const tasks = [buildTask("a", "low"), buildTask("b", "high")];
+    const originalOrder = tasks.map((t) => t.id);
+    sortTasksByUrgency(tasks);
+    expect(tasks.map((t) => t.id)).toEqual(originalOrder);
+  });
+
+  it("returns an empty array unchanged", () => {
+    expect(sortTasksByUrgency([])).toEqual([]);
   });
 });
