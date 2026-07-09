@@ -1,3 +1,12 @@
+﻿# fix-readme.ps1
+# Run this from inside your stadiumsense project folder (where package.json lives).
+# Replaces README.md entirely with a known-good, correctly UTF-8 encoded copy,
+# fixing the double-encoding corruption from prior in-place patches.
+
+Write-Host "Rewriting README.md with correct encoding..." -ForegroundColor Cyan
+
+$utf8NoBom = New-Object System.Text.UTF8Encoding $false
+$content = @'
 # StadiumSense
 
 A GenAI-powered assistant for **Smart Stadiums & Tournament Operations** —
@@ -151,3 +160,9 @@ not just static rendering.
 
 Next.js 16 (App Router) · TypeScript · Tailwind CSS 4 · Google Gemini API ·
 Jest + Testing Library + jest-axe
+'@
+[System.IO.File]::WriteAllText((Join-Path (Get-Location) "README.md"), $content, $utf8NoBom)
+Write-Host "  wrote README.md"
+
+Write-Host "Done. Verify with:" -ForegroundColor Green
+Write-Host "  Get-Content README.md -TotalCount 15"
