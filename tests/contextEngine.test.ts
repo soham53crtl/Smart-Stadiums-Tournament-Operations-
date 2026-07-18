@@ -105,6 +105,17 @@ describe("getAssistantResponse", () => {
     expect(result.answer).toMatch(/couldn't generate/i);
   });
 
+  it("falls back gracefully when the Gemini response is missing the candidates field entirely", async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({}),
+      text: async () => "",
+    });
+    const result = await getAssistantResponse("fan", sampleState, "Anything?");
+    expect(result.answer).toMatch(/couldn't generate/i);
+  });
+
   it("throws when the Gemini API responds with a non-OK status", async () => {
     mockFetch.mockResolvedValue({
       ok: false,

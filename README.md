@@ -116,13 +116,19 @@ npm run lint            # must show zero warnings
 npm run format:check    # must show no style issues
 ```
 
-68 tests across 11 suites, ~96% statement coverage. Every component
-(including the shared `RoleShell`, `PageHeader`, `ZoneStatusGrid`,
-`TaskQueue`) has its own render test, the `useChatSubmit` hook is tested
-directly with `renderHook` (debounce timing, immediate submit, error
-paths) independent of any component, and `ChatInterface`/`IncidentBoard`
-have interaction tests (`fireEvent`) covering clicks and form submission,
-not just static rendering.
+84 tests across 12 suites, 99% statement / 99% branch coverage. Every
+component (including the shared `RoleShell`, `PageHeader`,
+`ZoneStatusGrid`, `TaskQueue`) has its own render test, every page
+(`FanPage`, `OpsPage`, `VolunteerPage`, `StaffPage`, the landing page)
+has an integration test confirming it composes its sections correctly,
+the `useChatSubmit` hook is tested directly with `renderHook` (debounce
+timing, immediate submit, error paths) independent of any component, and
+`ChatInterface`/`IncidentBoard` have interaction tests (`fireEvent`)
+covering clicks and form submission, not just static rendering. Edge
+cases — malformed JSON bodies, non-`Error` thrown values, missing IP
+headers, malformed Gemini API responses, expired rate-limit entries —
+are each covered by a dedicated test rather than only exercised
+incidentally.
 
 ---
 

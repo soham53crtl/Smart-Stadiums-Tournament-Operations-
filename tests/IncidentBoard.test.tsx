@@ -59,4 +59,19 @@ describe("IncidentBoard", () => {
     // Only the still-open incident should have an action button.
     expect(screen.getAllByRole("button")).toHaveLength(1);
   });
+
+  it("advancing one incident's status leaves other incidents unaffected", () => {
+    const incidents: IncidentReport[] = [
+      { ...baseIncidents[0], id: "inc-1", status: "open" },
+      { ...baseIncidents[0], id: "inc-2", description: "Spilled drink", status: "open" },
+    ];
+    render(<IncidentBoard incidents={incidents} />);
+
+    const buttons = screen.getAllByRole("button", { name: /mark as investigating/i });
+    fireEvent.click(buttons[0]);
+
+    // Both incidents' statuses render; one advanced, the other is still "open".
+    expect(screen.getByText("investigating")).toBeInTheDocument();
+    expect(screen.getByText("open")).toBeInTheDocument();
+  });
 });

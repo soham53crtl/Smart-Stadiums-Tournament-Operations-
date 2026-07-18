@@ -95,6 +95,17 @@ describe("useChatSubmit", () => {
     expect(result.current.turns).toHaveLength(0);
   });
 
+  it("falls back to a generic error message when the API error response has no error field", async () => {
+    mockFetch.mockResolvedValueOnce({ ok: false, json: async () => ({}) });
+    const { result } = renderHook(() => useChatSubmit("fan"));
+
+    act(() => {
+      result.current.submitImmediate("test");
+    });
+
+    await waitFor(() => expect(result.current.error).toMatch(/something went wrong/i));
+  });
+
   it("sets a network error message when fetch itself rejects", async () => {
     mockFetch.mockRejectedValueOnce(new Error("network down"));
     const { result } = renderHook(() => useChatSubmit("fan"));

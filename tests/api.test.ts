@@ -12,7 +12,7 @@ jest.mock("@/lib/mockData", () => {
   return { ...actual, getLiveState: jest.fn(() => actual.getLiveState()) };
 });
 
-import { POST } from "@/app/api/chat/route";
+import { POST, sweepExpiredRateLimitEntries } from "@/app/api/chat/route";
 import { getAssistantResponse } from "@/lib/contextEngine";
 
 function makeRequest(body: unknown, ip = "1.2.3.4") {
@@ -65,6 +65,23 @@ describe("POST /api/chat", () => {
     expect(res.status).toBe(500);
   });
 
+  it("returns 500 and handles a non-Error value being thrown", async () => {
+    (getAssistantResponse as jest.Mock).mockRejectedValue("a plain string rejection");
+    const res = await POST(makeRequest({ role: "fan", query: "Which gate?" }, "10.0.0.6"));
+    expect(res.status).toBe(500);
+  });
+
+  it("falls back to 'unknown' as the rate-limit key when no forwarded-for header is present", async () => {
+    (getAssistantResponse as jest.Mock).mockResolvedValue({ answer: "ok", cached: false });
+    const req = new NextRequest("http://localhost/api/chat", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ role: "fan", query: "no ip header" }),
+    });
+    const res = await POST(req);
+    expect(res.status).toBe(200);
+  });
+
   it("rate limits after repeated requests from the same IP", async () => {
     (getAssistantResponse as jest.Mock).mockResolvedValue({ answer: "ok", cached: false });
     const ip = "10.0.0.5";
@@ -74,5 +91,30 @@ describe("POST /api/chat", () => {
       lastStatus = res.status;
     }
     expect(lastStatus).toBe(429);
+  });
+});
+
+describe("sweepExpiredRateLimitEntries", () => {
+  const WINDOW_MS = 60_000;
+
+  it("removes an IP entirely once all of its timestamps have aged out", () => {
+    const now = 1_000_000;
+    const hits = new Map<string, number[]>([["1.2.3.4", [now - WINDOW_MS - 1]]]);
+    sweepExpiredRateLimitEntries(hits, now);
+    expect(hits.has("1.2.3.4")).toBe(false);
+  });
+
+  it("keeps an IP's still-fresh timestamps and drops only the expired ones", () => {
+    const now = 1_000_000;
+    const hits = new Map<string, number[]>([["1.2.3.4", [now - WINDOW_MS - 1, now - 100]]]);
+    sweepExpiredRateLimitEntries(hits, now);
+    expect(hits.get("1.2.3.4")).toEqual([now - 100]);
+  });
+
+  it("leaves an IP with only fresh timestamps untouched", () => {
+    const now = 1_000_000;
+    const hits = new Map<string, number[]>([["1.2.3.4", [now - 10, now - 20]]]);
+    sweepExpiredRateLimitEntries(hits, now);
+    expect(hits.get("1.2.3.4")).toEqual([now - 10, now - 20]);
   });
 });

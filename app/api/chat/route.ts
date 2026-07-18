@@ -19,15 +19,23 @@ function isRateLimited(ip: string): boolean {
   return timestamps.length > RATE_LIMIT;
 }
 
-// Periodic sweep so the map doesn't grow unbounded on a long-running process.
-const sweeper = setInterval(() => {
-  const cutoff = Date.now() - WINDOW_MS;
-  for (const [ip, timestamps] of hits.entries()) {
+/**
+ * Removes rate-limit entries whose most recent request has aged out of the
+ * window. Extracted as a standalone function (rather than an inline
+ * setInterval callback) so it can be unit tested directly without waiting
+ * for a real timer to fire.
+ */
+export function sweepExpiredRateLimitEntries(hitsMap: Map<string, number[]>, now: number): void {
+  const cutoff = now - WINDOW_MS;
+  for (const [ip, timestamps] of hitsMap.entries()) {
     const filtered = timestamps.filter((t) => t > cutoff);
-    if (filtered.length === 0) hits.delete(ip);
-    else hits.set(ip, filtered);
+    if (filtered.length === 0) hitsMap.delete(ip);
+    else hitsMap.set(ip, filtered);
   }
-}, WINDOW_MS);
+}
+
+// Periodic sweep so the map doesn't grow unbounded on a long-running process.
+const sweeper = setInterval(() => sweepExpiredRateLimitEntries(hits, Date.now()), WINDOW_MS);
 sweeper.unref?.();
 
 const VALID_ROLES: UserRole[] = ["fan", "ops", "volunteer", "staff"];
