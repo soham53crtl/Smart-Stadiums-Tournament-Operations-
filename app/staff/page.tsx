@@ -3,6 +3,7 @@ import RoleShell from "@/components/RoleShell";
 import PageHeader from "@/components/PageHeader";
 import ChatInterface from "@/components/ChatInterface";
 import IncidentBoard from "@/components/IncidentBoard";
+import AccessibleRouteFinder from "@/components/AccessibleRouteFinder";
 import { getLiveState } from "@/lib/mockData";
 
 export default function StaffPage() {
@@ -15,6 +16,8 @@ export default function StaffPage() {
         eyebrowColor="text-signal"
         title="Accessibility & incidents"
       />
+
+      <AccessibleRouteFinder state={state} />
 
       <IncidentBoard incidents={state.incidents} />
 

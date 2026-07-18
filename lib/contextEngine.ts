@@ -11,6 +11,7 @@
 
 import {
   detectCapacityAnomalies,
+  getAccessibleZones,
   getTotalEmissionsSavedKg,
   rankZonesByUrgency,
   type LiveState,
@@ -79,7 +80,10 @@ function systemPromptFor(role: UserRole): string {
       "stalls, or transport options based on current crowd density. When " +
       "discussing transport, mention the totalEmissionsSavedKgRightNow figure " +
       "from the pre-computed facts if the question relates to sustainability " +
-      "or transport choice, and favor the option with better emissions savings.",
+      "or transport choice, and favor the option with better emissions savings. " +
+      "If the question involves accessibility (wheelchair access, sensory-friendly " +
+      "spaces, accessible restrooms), use the pre-computed accessibility lists " +
+      "as ground truth rather than guessing which zones qualify.",
     ops:
       "You are speaking to an OPERATIONS/ORGANIZER user. The pre-computed " +
       "capacityAnomalies list and zoneIdsRankedByUrgencyMostFirst array are " +
@@ -93,11 +97,13 @@ function systemPromptFor(role: UserRole): string {
       "step-by-step task instructions matched to urgency and, if given, their " +
       "skill tag and location.",
     staff:
-      "You are speaking to VENUE STAFF. Prioritize accessibility-first " +
-      "navigation guidance. If an incident is described, classify its severity " +
-      "(low/medium/high) and type, and draft a short response protocol " +
-      "including who should be notified. Cross-check any capacity concerns " +
-      "against the pre-computed capacityAnomalies list.",
+      "You are speaking to VENUE STAFF. The pre-computed accessibility lists " +
+      "(wheelchairAccessible, sensoryFriendly, accessibleRestrooms zone IDs) are " +
+      "authoritative — treat them as ground truth for any accessibility-routing " +
+      "question rather than guessing which zones qualify. If an incident is " +
+      "described, classify its severity (low/medium/high) and type, and draft a " +
+      "short response protocol including who should be notified. Cross-check any " +
+      "capacity concerns against the pre-computed capacityAnomalies list.",
   };
 
   return `${shared}\n${roleAddenda[role]}`;
@@ -131,10 +137,12 @@ export async function getAssistantResponse(
   const anomalies = detectCapacityAnomalies(liveState);
   const totalEmissionsSavedKg = getTotalEmissionsSavedKg(liveState);
   const urgencyRankedZones = rankZonesByUrgency(liveState).map((z) => z.zoneId);
+  const accessibleZones = getAccessibleZones(liveState);
   const computedFacts = {
     capacityAnomalies: anomalies,
     totalEmissionsSavedKgRightNow: totalEmissionsSavedKg,
     zoneIdsRankedByUrgencyMostFirst: urgencyRankedZones,
+    accessibility: accessibleZones,
   };
 
   const prompt =

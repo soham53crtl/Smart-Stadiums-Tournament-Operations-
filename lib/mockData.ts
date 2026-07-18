@@ -12,6 +12,9 @@ export interface ZoneStatus {
   capacityPercent: number; // 0-100, current reading
   queueWaitMinutes: number;
   capacityHistory: number[]; // last 6 readings, oldest first, current reading last
+  wheelchairAccessible: boolean;
+  sensoryFriendly: boolean; // low-noise, low-light zone suitable for sensory-sensitive visitors
+  hasAccessibleRestroom: boolean;
 }
 
 export interface TransportStatus {
@@ -62,6 +65,9 @@ const baseState: LiveState = {
       capacityPercent: 92,
       queueWaitMinutes: 18,
       capacityHistory: [58, 67, 74, 81, 88, 92],
+      wheelchairAccessible: true,
+      sensoryFriendly: false,
+      hasAccessibleRestroom: true,
     },
     {
       zoneId: "gate-5",
@@ -69,6 +75,9 @@ const baseState: LiveState = {
       capacityPercent: 41,
       queueWaitMinutes: 3,
       capacityHistory: [30, 35, 38, 40, 39, 41],
+      wheelchairAccessible: true,
+      sensoryFriendly: true,
+      hasAccessibleRestroom: true,
     },
     {
       zoneId: "gate-7",
@@ -76,6 +85,9 @@ const baseState: LiveState = {
       capacityPercent: 67,
       queueWaitMinutes: 9,
       capacityHistory: [70, 69, 68, 66, 67, 67],
+      wheelchairAccessible: false,
+      sensoryFriendly: false,
+      hasAccessibleRestroom: false,
     },
     {
       zoneId: "concourse-a",
@@ -83,6 +95,9 @@ const baseState: LiveState = {
       capacityPercent: 78,
       queueWaitMinutes: 6,
       capacityHistory: [50, 58, 64, 70, 75, 78],
+      wheelchairAccessible: true,
+      sensoryFriendly: false,
+      hasAccessibleRestroom: true,
     },
     {
       zoneId: "concourse-b",
@@ -90,6 +105,9 @@ const baseState: LiveState = {
       capacityPercent: 35,
       queueWaitMinutes: 2,
       capacityHistory: [20, 24, 28, 30, 33, 35],
+      wheelchairAccessible: true,
+      sensoryFriendly: true,
+      hasAccessibleRestroom: true,
     },
   ],
   transport: [
@@ -269,4 +287,104 @@ export function rankZonesByUrgency(state: LiveState): ZoneStatus[] {
 export function sortTasksByUrgency(tasks: VolunteerTask[]): VolunteerTask[] {
   const order: Record<VolunteerTask["urgency"], number> = { high: 0, medium: 1, low: 2 };
   return [...tasks].sort((a, b) => order[a.urgency] - order[b.urgency]);
+}
+
+// --- Navigation ---
+// A simple adjacency map of which zones physically connect to which,
+// modeling the concourse layout. This is what "navigation" actually runs
+// on: a real graph with a real shortest-path search, rather than the LLM
+// guessing a route from zone names alone.
+const ZONE_ADJACENCY: Record<string, string[]> = {
+  "gate-3": ["concourse-a"],
+  "gate-5": ["concourse-b"],
+  "gate-7": ["concourse-a", "concourse-b"],
+  "concourse-a": ["gate-3", "gate-7", "concourse-b"],
+  "concourse-b": ["gate-5", "gate-7", "concourse-a"],
+};
+
+export interface RouteResult {
+  path: string[]; // ordered zoneIds from start to destination, inclusive
+  stepCount: number;
+}
+
+/**
+ * Breadth-first search over the zone adjacency graph — the shortest path in
+ * number of hops between two zones. Returns null if no path exists (e.g. an
+ * unknown zoneId). This is a real graph search, not a heuristic or an LLM
+ * guess: the same start/destination pair always returns the same route.
+ */
+export function findShortestRoute(
+  startZoneId: string,
+  destinationZoneId: string
+): RouteResult | null {
+  if (!ZONE_ADJACENCY[startZoneId] || !ZONE_ADJACENCY[destinationZoneId]) return null;
+  if (startZoneId === destinationZoneId) return { path: [startZoneId], stepCount: 0 };
+
+  const visited = new Set<string>([startZoneId]);
+  const queue: string[][] = [[startZoneId]];
+
+  while (queue.length > 0) {
+    const path = queue.shift()!;
+    const current = path[path.length - 1];
+
+    for (const neighbor of ZONE_ADJACENCY[current] ?? []) {
+      if (visited.has(neighbor)) continue;
+      const nextPath = [...path, neighbor];
+      if (neighbor === destinationZoneId) {
+        return { path: nextPath, stepCount: nextPath.length - 1 };
+      }
+      visited.add(neighbor);
+      queue.push(nextPath);
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Same shortest-path search, but restricted to wheelchair-accessible zones
+ * only. This is the function Staff mode actually calls for "nearest
+ * accessible route" questions — the accessibility constraint is enforced by
+ * the graph search itself, not by asking the LLM to remember which zones
+ * are accessible.
+ */
+export function findAccessibleRoute(
+  state: LiveState,
+  startZoneId: string,
+  destinationZoneId: string
+): RouteResult | null {
+  const accessibleZoneIds = new Set(
+    state.zones.filter((z) => z.wheelchairAccessible).map((z) => z.zoneId)
+  );
+  if (!accessibleZoneIds.has(startZoneId) || !accessibleZoneIds.has(destinationZoneId)) return null;
+  if (startZoneId === destinationZoneId) return { path: [startZoneId], stepCount: 0 };
+
+  const visited = new Set<string>([startZoneId]);
+  const queue: string[][] = [[startZoneId]];
+
+  while (queue.length > 0) {
+    const path = queue.shift()!;
+    const current = path[path.length - 1];
+
+    for (const neighbor of ZONE_ADJACENCY[current] ?? []) {
+      if (!accessibleZoneIds.has(neighbor) || visited.has(neighbor)) continue;
+      const nextPath = [...path, neighbor];
+      if (neighbor === destinationZoneId) {
+        return { path: nextPath, stepCount: nextPath.length - 1 };
+      }
+      visited.add(neighbor);
+      queue.push(nextPath);
+    }
+  }
+
+  return null;
+}
+
+/** Returns every zone flagged as wheelchair accessible, restroom-equipped, or sensory-friendly. */
+export function getAccessibleZones(state: LiveState) {
+  return {
+    wheelchairAccessible: state.zones.filter((z) => z.wheelchairAccessible).map((z) => z.zoneId),
+    sensoryFriendly: state.zones.filter((z) => z.sensoryFriendly).map((z) => z.zoneId),
+    accessibleRestrooms: state.zones.filter((z) => z.hasAccessibleRestroom).map((z) => z.zoneId),
+  };
 }
